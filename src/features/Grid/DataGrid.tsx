@@ -112,11 +112,11 @@ export default function DataGrid(props: GridState) {
         const flattened = flattenColumns(columns);
         
         if (enableAutoColumnSizing && data.length > 0) {
-            return calculateAllColumnWidths(flattened, data, autoColumnSizingOptions);
+            return calculateAllColumnWidths(flattened, data, totalRow, autoColumnSizingOptions);
         }
         
         return flattened;
-    }, [columns, enableAutoColumnSizing, data, autoColumnSizingOptions]);
+    }, [columns, enableAutoColumnSizing, data, totalRow, autoColumnSizingOptions]);
 
     // Calculate virtual range
     const virtualRange = useMemo((): VirtualRange => {
@@ -173,6 +173,8 @@ export default function DataGrid(props: GridState) {
         const hasGroups = columns.some(isGroupColumn);
         if (!hasGroups) return null;
 
+        let currentColumnIndex = 1; // CSS Grid columns are 1-indexed
+
         return (
             <div 
                 className="data-grid-header-groups" 
@@ -184,23 +186,42 @@ export default function DataGrid(props: GridState) {
                 {columns.map((column, index) => {
                     if (isGroupColumn(column)) {
                         const renderer = column.headerCellRenderer || defaultGroupHeaderCellRenderer;
+                        const childrenCount = flattenColumns(column.children).length;
                         
-                        return (
+                        const groupElement = (
                             <div 
                                 key={column.groupId || index}
                                 className={`data-grid-header-group ${column.headerClassName || ''}`}
+                                style={enableAutoColumnSizing ? {} : {
+                                    gridColumn: `${currentColumnIndex} / ${currentColumnIndex + childrenCount}`
+                                }}
                             >
                                 {renderer(column)}
                             </div>
                         );
+                        
+                        if (!enableAutoColumnSizing) {
+                            currentColumnIndex += childrenCount;
+                        }
+                        
+                        return groupElement;
                     } else {
                         // For non-grouped columns, render a placeholder
-                        return (
+                        const placeholderElement = (
                             <div 
                                 key={column.colId || index}
                                 className="data-grid-header-group-placeholder"
+                                style={enableAutoColumnSizing ? {} : {
+                                    gridColumn: `${currentColumnIndex} / ${currentColumnIndex + 1}`
+                                }}
                             />
                         );
+                        
+                        if (!enableAutoColumnSizing) {
+                            currentColumnIndex += 1;
+                        }
+                        
+                        return placeholderElement;
                     }
                 })}
             </div>
@@ -218,7 +239,9 @@ export default function DataGrid(props: GridState) {
                         key={column.colId || index}
                         className={`data-grid-header ${column.headerClassName}`}
                         style={{ 
-                            width: enableAutoColumnSizing ? `${column.width}px` : undefined 
+                            width: enableAutoColumnSizing ? `${column.width}px` : undefined,
+                            minWidth: enableAutoColumnSizing ? undefined : 0,
+                            maxWidth: enableAutoColumnSizing ? undefined : 'none'
                         }}
                     >
                         {renderer(column)}
@@ -253,7 +276,9 @@ export default function DataGrid(props: GridState) {
                         className={`data-grid-cell ${column.cellClassName}`}
                         data-type={column.dataType}
                         style={{ 
-                            width: enableAutoColumnSizing ? `${column.width}px` : undefined 
+                            width: enableAutoColumnSizing ? `${column.width}px` : undefined,
+                            minWidth: enableAutoColumnSizing ? undefined : 0,
+                            maxWidth: enableAutoColumnSizing ? undefined : 'none'
                         }}
                     >
                         {cellRenderer(formattedValue, row, column)}
@@ -311,7 +336,9 @@ export default function DataGrid(props: GridState) {
                             className={`data-grid-cell data-grid-total-cell ${column.cellClassName}`}
                             data-type={column.dataType}
                             style={{ 
-                                width: enableAutoColumnSizing ? `${column.width}px` : undefined 
+                                width: enableAutoColumnSizing ? `${column.width}px` : undefined,
+                                minWidth: enableAutoColumnSizing ? undefined : 0,
+                                maxWidth: enableAutoColumnSizing ? undefined : 'none'
                             }}
                         >
                             {cellRenderer(formattedValue, totalRow, column)}
@@ -332,30 +359,47 @@ export default function DataGrid(props: GridState) {
 
     // Calculate grid template columns for group headers
     const groupHeaderGridTemplateColumns = useMemo(() => {
-        if (!enableAutoColumnSizing) {
-            return `repeat(${columns.length}, 1fr)`;
+        if (enableAutoColumnSizing) {
+            // For auto-sizing, calculate widths for each top-level column/group
+            const groupWidths: string[] = [];
+            
+            columns.forEach(column => {
+                if (isGroupColumn(column)) {
+                    // Sum up widths of all children
+                    const childrenFlat = flattenColumns(column.children);
+                    const totalWidth = childrenFlat.reduce((sum, childCol) => {
+                        const matchingFlatCol = flatColumns.find(fc => fc.colId === childCol.colId);
+                        return sum + (matchingFlatCol?.width || childCol.width);
+                    }, 0);
+                    groupWidths.push(`${totalWidth}px`);
+                } else {
+                    // Single column
+                    const matchingFlatCol = flatColumns.find(fc => fc.colId === column.colId);
+                    groupWidths.push(`${matchingFlatCol?.width || column.width}px`);
+                }
+            });
+            
+            return groupWidths.join(' ');
+        } else {
+            // When auto-sizing is disabled, create a grid that matches the individual columns
+            // Each group spans the number of columns equal to its children count
+            const groupSpans: string[] = [];
+            
+            columns.forEach(column => {
+                if (isGroupColumn(column)) {
+                    const childrenCount = flattenColumns(column.children).length;
+                    // Each group gets a number of fr units equal to its children count
+                    for (let i = 0; i < childrenCount; i++) {
+                        groupSpans.push('1fr');
+                    }
+                } else {
+                    // Single column gets 1fr
+                    groupSpans.push('1fr');
+                }
+            });
+            
+            return groupSpans.join(' ');
         }
-        
-        // For auto-sizing, calculate widths for each top-level column/group
-        const groupWidths: string[] = [];
-        
-        columns.forEach(column => {
-            if (isGroupColumn(column)) {
-                // Sum up widths of all children
-                const childrenFlat = flattenColumns(column.children);
-                const totalWidth = childrenFlat.reduce((sum, childCol) => {
-                    const matchingFlatCol = flatColumns.find(fc => fc.colId === childCol.colId);
-                    return sum + (matchingFlatCol?.width || childCol.width);
-                }, 0);
-                groupWidths.push(`${totalWidth}px`);
-            } else {
-                // Single column
-                const matchingFlatCol = flatColumns.find(fc => fc.colId === column.colId);
-                groupWidths.push(`${matchingFlatCol?.width || column.width}px`);
-            }
-        });
-        
-        return groupWidths.join(' ');
     }, [columns, flatColumns, enableAutoColumnSizing]);
 
     return (

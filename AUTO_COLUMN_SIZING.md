@@ -13,6 +13,7 @@ The auto column sizing feature has been successfully implemented in the DataGrid
 
 2. **Smart Content Analysis**
    - Analyzes both header text and data content
+   - **Includes total row analysis** for accurate width calculation
    - Applies the same formatting logic used for display (currency, dates, booleans)
    - Stratified sampling for large datasets (beginning, middle, end)
 
@@ -64,6 +65,8 @@ The auto column sizing feature has been successfully implemented in the DataGrid
 ### 🧪 Testing
 
 The implementation includes comprehensive test data:
+- **Header analysis**: Measures column header text width
+- **Total row analysis**: Includes total/summary row values (often the widest)
 - **Notes column**: Variable length text (from "Intern" to full sentences)
 - **Currency formatting**: Proper width calculation for $XX,XXX.XX format
 - **Date formatting**: Consistent width for date columns
@@ -73,16 +76,16 @@ The implementation includes comprehensive test data:
 ### 🔧 Technical Implementation
 
 #### Files Created/Modified:
-1. **textMeasurement.ts**: Core measurement utilities
+1. **textMeasurement.ts**: Core measurement utilities with total row analysis
 2. **gridState.ts**: Added AutoColumnSizingOptions interface
-3. **DataGrid.tsx**: Integrated auto-sizing logic
+3. **DataGrid.tsx**: Integrated auto-sizing logic with total row support
 4. **sample.ts**: Enhanced with variable-length content
 5. **App.tsx**: Added toggle for demonstration
 
 #### Key Functions:
 - `measureTextWidth()`: Canvas-based text measurement
-- `calculateColumnWidth()`: Single column width calculation
-- `calculateAllColumnWidths()`: Batch processing for all columns
+- `calculateColumnWidth()`: Single column width calculation including total row
+- `calculateAllColumnWidths()`: Batch processing for all columns with total row support
 - `cleanupMeasurementCanvas()`: Memory management
 
 ### 📊 Performance Characteristics

@@ -24,7 +24,7 @@ function App() {
   };
 
   return (
-    <div style={{ padding: '20px', height: '150vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ padding: '20px', height: '150vh', minHeight: '960px', display: 'flex', flexDirection: 'column' }}>
       <h1>Griddy - Advanced DataGrid Component</h1>
       <p>A high-performance React data grid with row virtualization, grouped columns, and custom renderers.</p>
       

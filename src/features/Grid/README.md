@@ -172,10 +172,11 @@ The DataGrid supports intelligent auto column sizing that analyzes both header t
 ### How It Works
 
 1. **Header Analysis**: Measures the width of header text using canvas text metrics
-2. **Content Sampling**: Samples data rows (configurable amount) to find the widest content
-3. **Smart Formatting**: Applies the same formatting logic used for display (currency, dates, etc.)
-4. **Type-Aware Minimums**: Applies sensible minimum widths based on data type
-5. **Performance Optimization**: Uses early exit when maximum width is reached
+2. **Total Row Analysis**: Includes total/summary row values in width calculation (often the widest content)
+3. **Content Sampling**: Samples data rows (configurable amount) to find the widest content
+4. **Smart Formatting**: Applies the same formatting logic used for display (currency, dates, etc.)
+5. **Type-Aware Minimums**: Applies sensible minimum widths based on data type
+6. **Performance Optimization**: Uses early exit when maximum width is reached
 
 ### Performance Considerations
 

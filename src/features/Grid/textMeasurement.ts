@@ -52,6 +52,7 @@ export const measureTextWidth = (text: string, font: string = DEFAULT_FONT): num
 export const calculateColumnWidth = (
     column: ColState,
     data: DataRow[],
+    totalRow: DataRow | undefined = undefined,
     maxSampleSize: number = 100,
     minWidth: number = 60,
     maxWidth: number = 300,
@@ -67,18 +68,16 @@ export const calculateColumnWidth = (
     // Measure header text
     ctx.font = HEADER_FONT;
     const headerWidth = ctx.measureText(column.headerName).width;
-    maxWidth_measured = Math.max(maxWidth_measured, headerWidth);
-
-    // Sample data for measurement (to avoid performance issues with large datasets)
-    const sampleData = data.length > maxSampleSize 
-        ? data.slice(0, maxSampleSize) 
-        : data;
-
-    // Measure cell content
-    ctx.font = DEFAULT_FONT;
     
-    for (const row of sampleData) {
-        const cellValue = row[column.field];
+    // Add extra space for header-specific elements:
+    // - 20px reserved space for potential sort indicators (margin + icon)
+    // Note: Base padding is added later in the function, so don't double-count it
+    const headerWithSortSpace = headerWidth + 20; // Sort indicator space
+    
+    maxWidth_measured = Math.max(maxWidth_measured, headerWithSortSpace);
+
+    // Helper function to format and measure cell value
+    const formatAndMeasureValue = (cellValue: unknown): number => {
         let displayText = '';
 
         // Format the value the same way it would be displayed
@@ -116,7 +115,32 @@ export const calculateColumnWidth = (
             }
         }
 
-        const cellWidth = ctx.measureText(displayText).width;
+        return ctx.measureText(displayText).width;
+    };
+
+    // Set font for cell content measurement
+    ctx.font = DEFAULT_FONT;
+
+    // Measure total row if provided (total row values are often the widest)
+    if (totalRow && totalRow[column.field] !== undefined) {
+        const totalCellWidth = formatAndMeasureValue(totalRow[column.field]);
+        maxWidth_measured = Math.max(maxWidth_measured, totalCellWidth);
+        
+        // Early exit optimization: if total row already reaches max width, no need to check data
+        if (maxWidth_measured >= maxWidth - padding) {
+            const typeMinWidth = getTypeMinWidth(column, minWidth);
+            return Math.ceil(Math.max(typeMinWidth, Math.min(maxWidth, maxWidth_measured + padding)));
+        }
+    }
+
+    // Sample data for measurement (to avoid performance issues with large datasets)
+    const sampleData = data.length > maxSampleSize 
+        ? data.slice(0, maxSampleSize) 
+        : data;
+    
+    for (const row of sampleData) {
+        const cellValue = row[column.field];
+        const cellWidth = formatAndMeasureValue(cellValue);
         maxWidth_measured = Math.max(maxWidth_measured, cellWidth);
         
         // Early exit optimization: if we've reached max width, no need to continue
@@ -126,22 +150,7 @@ export const calculateColumnWidth = (
     }
 
     // For certain data types, apply minimum widths that make sense
-    let typeMinWidth = minWidth;
-    switch (column.dataType) {
-        case 'number':
-            if (column.dataFormat === 'currency') {
-                typeMinWidth = Math.max(minWidth, 100); // Currency needs more space
-            } else {
-                typeMinWidth = Math.max(minWidth, 80); // Regular numbers
-            }
-            break;
-        case 'date':
-            typeMinWidth = Math.max(minWidth, 100); // Dates need consistent space
-            break;
-        case 'boolean':
-            typeMinWidth = Math.max(minWidth, 70); // Yes/No columns
-            break;
-    }
+    const typeMinWidth = getTypeMinWidth(column, minWidth);
 
     // Add padding and constrain to min/max bounds
     const finalWidth = Math.max(typeMinWidth, Math.min(maxWidth, maxWidth_measured + padding));
@@ -149,10 +158,29 @@ export const calculateColumnWidth = (
     return Math.ceil(finalWidth);
 };
 
+// Helper function to get type-specific minimum width
+const getTypeMinWidth = (column: ColState, minWidth: number): number => {
+    switch (column.dataType) {
+        case 'number':
+            if (column.dataFormat === 'currency') {
+                return Math.max(minWidth, 100); // Currency needs more space
+            } else {
+                return Math.max(minWidth, 80); // Regular numbers
+            }
+        case 'date':
+            return Math.max(minWidth, 100); // Dates need consistent space
+        case 'boolean':
+            return Math.max(minWidth, 70); // Yes/No columns
+        default:
+            return minWidth;
+    }
+};
+
 // Calculate optimal widths for all columns
 export const calculateAllColumnWidths = (
     columns: ColState[],
     data: DataRow[],
+    totalRow: DataRow | undefined = undefined,
     options: {
         maxSampleSize?: number;
         minWidth?: number;
@@ -169,7 +197,7 @@ export const calculateAllColumnWidths = (
 
     return columns.map(column => ({
         ...column,
-        width: calculateColumnWidth(column, data, maxSampleSize, minWidth, maxWidth, padding)
+        width: calculateColumnWidth(column, data, totalRow, maxSampleSize, minWidth, maxWidth, padding)
     }));
 };
 

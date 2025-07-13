@@ -64,6 +64,8 @@
     position: sticky;
     top: 0;
     z-index: 15;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .data-grid-header {
@@ -79,6 +81,7 @@
     align-items: center;
     min-height: 44px;
     box-sizing: border-box;
+    min-width: 0; /* Allow grid to control width */
 }
 
 .data-grid-header:hover {
@@ -130,6 +133,8 @@
     grid-template-columns: var(--grid-template-columns);
     transition: background-color 0.15s ease;
     min-height: 40px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .data-grid-row:hover {
@@ -156,6 +161,8 @@
     z-index: 15;
     box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
     margin-top: auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .data-grid-total-cell {
@@ -176,6 +183,7 @@
     align-items: center;
     min-height: 40px;
     box-sizing: border-box;
+    min-width: 0; /* Allow grid to control width */
 }
 
 .data-grid-cell:last-child {
