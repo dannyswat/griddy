@@ -229,27 +229,38 @@ export default function DataGrid(props: GridState) {
     };
 
     // Render column headers
-    const renderHeaders = () => (
-        <div className="data-grid-headers" style={{ height: HEADER_HEIGHT }}>
-            {flatColumns.map((column, index) => {
-                const renderer = column.headerCellRenderer || defaultHeaderCellRenderer;
-                
-                return (
-                    <div 
-                        key={column.colId || index}
-                        className={`data-grid-header ${column.headerClassName}`}
-                        style={{ 
-                            width: enableAutoColumnSizing ? `${column.width}px` : undefined,
-                            minWidth: enableAutoColumnSizing ? undefined : 0,
-                            maxWidth: enableAutoColumnSizing ? undefined : 'none'
-                        }}
-                    >
-                        {renderer(column)}
-                    </div>
-                );
-            })}
-        </div>
-    );
+    const renderHeaders = () => {
+        const hasGroups = columns.some(isGroupColumn);
+        const headerTop = hasGroups ? GROUP_HEADER_HEIGHT : 0;
+        
+        return (
+            <div 
+                className="data-grid-headers" 
+                style={{ 
+                    height: HEADER_HEIGHT,
+                    top: `${headerTop}px`
+                }}
+            >
+                {flatColumns.map((column, index) => {
+                    const renderer = column.headerCellRenderer || defaultHeaderCellRenderer;
+                    
+                    return (
+                        <div 
+                            key={column.colId || index}
+                            className={`data-grid-header ${column.headerClassName}`}
+                            style={{ 
+                                width: enableAutoColumnSizing ? `${column.width}px` : undefined,
+                                minWidth: enableAutoColumnSizing ? undefined : 0,
+                                maxWidth: enableAutoColumnSizing ? undefined : 'none'
+                            }}
+                        >
+                            {renderer(column)}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
 
     // Render a single row
     const renderRow = (row: DataRow, _rowIndex: number, actualRowIndex: number) => (
