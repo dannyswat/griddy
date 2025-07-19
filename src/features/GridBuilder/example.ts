@@ -14,7 +14,7 @@ export const exampleColumnDefs: ColumnDefinition[] = [
     {
         field: 'year',
         headerName: 'Year', 
-        pivot: true,
+        rowGroup: true,
         width: 100
     },
     {

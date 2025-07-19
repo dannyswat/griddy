@@ -101,7 +101,7 @@ function createPivotColumns(columnDefs: ColumnDefinition[], rowData: DataRow[]):
             if (valueCols.length === 1) {
                 // Single value column: create direct column
                 const valueCol = valueCols[0];
-                result.push(createPivotValueColumn(valueCol, pivotValue, pivotCols));
+                result.push(createPivotValueColumn(valueCol, pivotValue));
             } else {
                 // Multiple value columns: create group with children
                 const groupCol: GroupColState = {
@@ -109,7 +109,7 @@ function createPivotColumns(columnDefs: ColumnDefinition[], rowData: DataRow[]):
                     headerName: pivotValue,
                     headerClassName: 'pivot-group',
                     children: valueCols.map(valueCol => 
-                        createPivotValueColumn(valueCol, pivotValue, pivotCols)
+                        createPivotValueColumn(valueCol, pivotValue)
                     )
                 };
                 result.push(groupCol);
@@ -128,11 +128,11 @@ function createPivotColumns(columnDefs: ColumnDefinition[], rowData: DataRow[]):
     return result;
 }
 
-function createPivotValueColumn(valueCol: ColDef, pivotValue: string, pivotCols: ColDef[]): ColState {
+function createPivotValueColumn(valueCol: ColDef, pivotValue: string): ColState {
     return {
         field: `${valueCol.field}_${pivotValue}`,
         colId: `${valueCol.colId || valueCol.field}_${pivotValue}`,
-        headerName: pivotCols.length === 1 ? pivotValue : (valueCol.headerName || valueCol.field || ''),
+        headerName: valueCol.headerName || valueCol.field || '',
         headerClassName: valueCol.headerClassName || 'pivot-value',
         cellClassName: valueCol.cellClassName || 'pivot-value',
         dataType: valueCol.dataType || 'number',
